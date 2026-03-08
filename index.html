@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sakash Voice</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main class="app-shell">
+    <section class="app-card" aria-label="Sakash Voice interface">
+      <header class="app-header">
+        <h1>Sakash Voice</h1>
+        <p>Practice Toastmasters-style Table Topics and get AI feedback on speech and body language.</p>
+      </header>
+
+      <section class="instructions" aria-label="How it works">
+        <h2>How it works</h2>
+        <ol>
+          <li>Click Generate Idea</li>
+          <li>Think for a few seconds</li>
+          <li>Speak when recording starts</li>
+          <li>Review transcript and feedback</li>
+        </ol>
+      </section>
+
+      <section class="topic-section" aria-label="Topic generator">
+        <div class="timer-controls">
+          <label for="thinkingTime">Thinking Time</label>
+          <select id="thinkingTime">
+            <option value="5">5 seconds</option>
+            <option value="10">10 seconds</option>
+            <option value="15" selected>15 seconds</option>
+          </select>
+        </div>
+
+        <div id="topicBox" class="topic-box" role="status" aria-live="polite">
+          Click Generate Idea to get a random Table Topics prompt.
+        </div>
+
+        <div class="countdown-row">
+          <p id="statusText" class="status" aria-live="polite">Waiting</p>
+          <p id="countdown" class="countdown">--</p>
+        </div>
+      </section>
+
+      <section class="recording-area" aria-label="Recording status">
+        <p class="recording-title">Recording Stage</p>
+
+        <div class="recording-grid">
+          <div class="mic-stage" aria-live="polite">
+            <div id="micButton" class="mic-button">
+              <svg class="mic-icon" viewBox="0 0 64 64" aria-hidden="true">
+                <rect x="22" y="10" width="20" height="30" rx="10" fill="currentColor"></rect>
+                <path d="M16 30c0 9 7 16 16 16s16-7 16-16" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"></path>
+                <line x1="32" y1="46" x2="32" y2="54" stroke="currentColor" stroke-width="4" stroke-linecap="round"></line>
+                <line x1="24" y1="54" x2="40" y2="54" stroke="currentColor" stroke-width="4" stroke-linecap="round"></line>
+              </svg>
+              <span id="micLabel" class="mic-label">Idle</span>
+            </div>
+            <span class="ring ring-1" aria-hidden="true"></span>
+            <span class="ring ring-2" aria-hidden="true"></span>
+            <span class="ring ring-3" aria-hidden="true"></span>
+          </div>
+
+          <div class="webcam-wrap">
+            <video id="webcamVideo" class="webcam-video" autoplay muted playsinline></video>
+            <p id="poseSummary" class="pose-summary">Body data will appear after recording.</p>
+          </div>
+        </div>
+
+        <div id="waveform" class="waveform" aria-hidden="true">
+          <span></span>
+          <span></span>
+          <span></span>
+          <span></span>
+          <span></span>
+          <span></span>
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
+
+        <p id="recordingStatus" class="recording-status">Not Recording</p>
+        <button id="stopRecordingButton" class="stop-recording-button" type="button" hidden>Stop Recording</button>
+      </section>
+
+      <section class="panel-section">
+        <h2>Transcript</h2>
+        <div id="transcriptBox" class="text-panel" role="status" aria-live="polite">
+          Your speech transcript will appear here.
+        </div>
+      </section>
+
+      <section class="panel-section">
+        <h2>AI Feedback</h2>
+        <div id="feedbackCard" class="feedback-card">
+          <p>Feedback will appear after a completed session.</p>
+        </div>
+      </section>
+
+      <div class="actions">
+        <button id="generateButton" class="primary-button" type="button">Generate Idea</button>
+        <button id="resetButton" class="secondary-button" type="button">Reset Session</button>
+      </div>
+    </section>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
