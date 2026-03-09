@@ -12,7 +12,7 @@ It helps users practice impromptu speaking with:
 
 ## Features
 
-- Random Table Topics prompts
+- Gemini API-based Table Topics prompt generation
 - Thinking timer options: 5s, 10s, 15s
 - Automatic 60-second recording session
 - Live transcript updates while speaking
@@ -39,26 +39,30 @@ sakash-voice/
 
 ## Run Locally
 
-No framework is required.
+1. Install dependencies:
 
-1. Open `index.html` in a modern Chromium-based browser (for best Web Speech support), or serve the folder with any static server.
-2. Allow microphone and webcam permissions when prompted.
-3. Click `Generate Idea` to start a session.
+```bash
+npm install
+```
+
+2. Start the app server:
+
+```bash
+npm start
+```
+
+3. Open `http://localhost:3000` in a modern Chromium-based browser (for best Web Speech support).
+4. Allow microphone and webcam permissions when prompted.
+5. Click `Generate Idea` to start a session.
 
 ## Gemini API Key
 
-The app reads the API key in this order:
+The app reads Gemini configuration from server environment variables only:
 
-1. `window.GEMINI_API_KEY`
-2. `window.__GEMINI_API_KEY`
-3. `localStorage["GEMINI_API_KEY"]`
-4. Manual prompt in browser if none is found
+- `GEMINI_API_KEY`
+- `GEMINI_MODEL` (optional, default `gemini-2.0-flash`)
 
-Example (browser console):
-
-```js
-window.GEMINI_API_KEY = "YOUR_API_KEY_HERE";
-```
+Set these in `.env` before running `npm start`.
 
 ## Browser Requirements
 

@@ -6,9 +6,12 @@ import { fileURLToPath } from "url";
 dotenv.config();
 
 const app = express();
-const port = process.env.PORT || 3000;
+const preferredPort = Number(process.env.PORT) || 3000;
 const geminiApiKey = process.env.GEMINI_API_KEY;
-const geminiModel = process.env.GEMINI_MODEL || "gemini-1.5-flash";
+const geminiModels = (process.env.GEMINI_MODELS || process.env.GEMINI_MODEL || "gemini-2.0-flash")
+  .split(",")
+  .map((m) => m.trim())
+  .filter(Boolean);
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -43,6 +46,102 @@ function safeParseFeedback(text) {
   }
 }
 
+function cleanGeneratedTopic(text) {
+  const singleLine = String(text || "").replace(/\s+/g, " ").trim();
+  const trimmed = singleLine.replace(/^[-*\d.\s]+/, "").replace(/^"|"$/g, "").trim();
+  return trimmed;
+}
+
+async function requestGeminiText(prompt, generationConfig = {}) {
+  let lastErrorDetails = "Unknown Gemini error";
+  let lastModelTried = geminiModels[0] || "unknown";
+
+  for (const model of geminiModels) {
+    lastModelTried = model;
+
+    try {
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiApiKey}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            contents: [
+              {
+                role: "user",
+                parts: [{ text: prompt }]
+              }
+            ],
+            generationConfig
+          })
+        }
+      );
+
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        lastErrorDetails = data?.error?.message || "Unknown Gemini error";
+        console.error(`Gemini error [${model}] (${response.status}):`, lastErrorDetails);
+        continue;
+      }
+
+      return {
+        text: extractGeminiText(data),
+        model
+      };
+    } catch (error) {
+      lastErrorDetails = error instanceof Error ? error.message : "Unknown Gemini error";
+    }
+  }
+
+  throw {
+    message: "Gemini API request failed.",
+    details: lastErrorDetails,
+    model: lastModelTried
+  };
+}
+
+app.get("/api/generate-topic", async (req, res) => {
+  if (!geminiApiKey) {
+    return res.status(500).json({ error: "GEMINI_API_KEY is not set on server." });
+  }
+
+  const prompt = [
+    "You create Toastmasters Table Topics prompts.",
+    "Generate exactly one concise speaking prompt for a 1-minute impromptu speech.",
+    "Rules:",
+    "- Return plain text only.",
+    "- No numbering, no markdown, no quotes.",
+    "- Max 18 words.",
+    "- Friendly and thought-provoking."
+  ].join("\n");
+
+  try {
+    const result = await requestGeminiText(prompt, { temperature: 0.9 });
+    const topic = cleanGeneratedTopic(result.text);
+    if (!topic) {
+      return res.status(502).json({ error: "Gemini returned an empty topic." });
+    }
+
+    return res.json({ topic });
+  } catch (error) {
+    if (error?.message === "Gemini API request failed.") {
+      return res.status(502).json({
+        error: error.message,
+        details: error.details || "Unknown Gemini error",
+        model: error.model || "unknown"
+      });
+    }
+
+    return res.status(500).json({
+      error: "Failed to generate topic.",
+      details: error instanceof Error ? error.message : "Unknown error"
+    });
+  }
+});
+
 app.post("/api/gemini-analyze", async (req, res) => {
   const transcript = String(req.body?.transcript || "").trim();
   const topic = String(req.body?.topic || "").trim();
@@ -69,42 +168,22 @@ app.post("/api/gemini-analyze", async (req, res) => {
   ].join("\n");
 
   try {
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent?key=${geminiApiKey}`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          contents: [
-            {
-              role: "user",
-              parts: [{ text: prompt }]
-            }
-          ],
-          generationConfig: {
-            temperature: 0.4,
-            responseMimeType: "application/json"
-          }
-        })
-      }
-    );
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      return res.status(502).json({
-        error: "Gemini API request failed.",
-        details: data?.error?.message || "Unknown Gemini error",
-        model: geminiModel
-      });
-    }
-
-    const text = extractGeminiText(data);
+    const result = await requestGeminiText(prompt, {
+      temperature: 0.4,
+      responseMimeType: "application/json"
+    });
+    const text = result.text;
     const feedback = safeParseFeedback(text);
     return res.json(feedback);
   } catch (error) {
+    if (error?.message === "Gemini API request failed.") {
+      return res.status(502).json({
+        error: error.message,
+        details: error.details || "Unknown Gemini error",
+        model: error.model || "unknown"
+      });
+    }
+
     return res.status(500).json({
       error: "Failed to analyze transcript.",
       details: error instanceof Error ? error.message : "Unknown error"
@@ -112,10 +191,30 @@ app.post("/api/gemini-analyze", async (req, res) => {
   }
 });
 
+app.use("/api", (req, res) => {
+  return res.status(404).json({ error: "API route not found." });
+});
+
 app.get("*", (req, res) => {
   res.sendFile(path.join(__dirname, "index.html"));
 });
 
-app.listen(port, () => {
-  console.log(`Sakash Voice running at http://localhost:${port}`);
-});
+function startServer(port) {
+  const server = app.listen(port, () => {
+    console.log(`Sakash Voice running at http://localhost:${port}`);
+  });
+
+  server.on("error", (error) => {
+    if (error?.code === "EADDRINUSE") {
+      const nextPort = port + 1;
+      console.warn(`Port ${port} is busy. Retrying on ${nextPort}...`);
+      startServer(nextPort);
+      return;
+    }
+
+    console.error("Server failed to start:", error);
+    process.exit(1);
+  });
+}
+
+startServer(preferredPort);

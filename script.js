@@ -14,14 +14,6 @@ const poseSummary = document.getElementById("poseSummary");
 const transcriptBox = document.getElementById("transcriptBox");
 const feedbackCard = document.getElementById("feedbackCard");
 
-const topics = [
-  "Describe your ideal morning routine.",
-  "What is a skill everyone should learn?",
-  "If you could travel anywhere tomorrow, where would you go?",
-  "Talk about a failure that taught you something valuable.",
-  "What does success mean to you?"
-];
-
 const STATES = {
   WAITING: "Waiting",
   THINKING: "Thinking",
@@ -33,13 +25,6 @@ const STATES = {
 const SpeechRecognitionClass = window.SpeechRecognition || window.webkitSpeechRecognition;
 const supportsSpeech = Boolean(SpeechRecognitionClass);
 const supportsPose = typeof window.Pose === "function";
-const DEFAULT_GEMINI_API_KEY = "";
-const GEMINI_MODELS = [
-  "gemini-2.0-flash",
-  "gemini-1.5-flash-latest",
-  "gemini-1.5-flash",
-  "gemini-1.5-pro-latest"
-];
 
 let currentState = STATES.WAITING;
 let activeTopic = "";
@@ -319,96 +304,48 @@ function stopWebcamAndPose() {
   webcamVideo.srcObject = null;
 }
 
-function getGeminiApiKey() {
-  return (
-    window.GEMINI_API_KEY ||
-    window.__GEMINI_API_KEY ||
-    localStorage.getItem("GEMINI_API_KEY") ||
-    DEFAULT_GEMINI_API_KEY
-  );
-}
-
 async function requestGeminiFeedback(transcript, bodyData) {
-  let key = getGeminiApiKey();
-  if (!key) {
-    const entered = window.prompt("Enter Gemini API key for browser-side feedback:");
-    if (entered) {
-      localStorage.setItem("GEMINI_API_KEY", entered.trim());
-      key = entered.trim();
-    }
+  const serverResponse = await fetch("/api/gemini-analyze", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      transcript,
+      topic: activeTopic,
+      bodyData
+    })
+  });
+
+  const feedbackContentType = serverResponse.headers.get("content-type") || "";
+  if (!feedbackContentType.includes("application/json")) {
+    throw new Error("API endpoint not reached. Open the app from the Node server URL shown in terminal.");
   }
 
-  if (!key) {
-    throw new Error("Gemini API key not available in browser.");
+  const serverPayload = await serverResponse.json().catch(() => ({}));
+  if (!serverResponse.ok) {
+    throw new Error(serverPayload?.details || serverPayload?.error || "Gemini request failed.");
   }
 
-  const prompt = [
-    "You are a professional Toastmasters speaking coach.",
-    "Analyze the following speaking practice session.",
-    "",
-    "Transcript:",
-    transcript,
-    "",
-    "Body Language Data:",
-    JSON.stringify(bodyData, null, 2),
-    "",
-    "Provide feedback in this format:",
+  return [
     "Speech",
-    "- Speaking Speed",
-    "- Clarity",
-    "- Tone",
+    `- Speaking Speed: ${serverPayload.speakingSpeed || "Good pace."}`,
+    `- Clarity: ${serverPayload.clarity || "Mostly clear speech."}`,
+    `- Tone: ${serverPayload.tone || "Try varying pitch for engagement."}`,
     "",
-    "Body Language",
-    "- Posture",
-    "- Hand Gestures",
-    "- Eye Contact",
-    "",
-    "Suggestions"
+    "Suggestions",
+    `- ${serverPayload.suggestions || "Add a stronger opening and a clear closing."}`
   ].join("\n");
-
-  let lastErrorMessage = "Gemini request failed.";
-
-  for (const model of GEMINI_MODELS) {
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [{ role: "user", parts: [{ text: prompt }] }],
-          generationConfig: { temperature: 0.4 }
-        })
-      }
-    );
-
-    const payload = await response.json().catch(() => ({}));
-
-    if (!response.ok) {
-      const message = payload?.error?.message || "Gemini request failed.";
-      lastErrorMessage = message;
-
-      if (/reported as leaked/i.test(message)) {
-        throw new Error(message);
-      }
-
-      if (/not found for API version|not supported for generateContent/i.test(message)) {
-        continue;
-      }
-
-      continue;
-    }
-
-    const text = payload?.candidates?.[0]?.content?.parts?.map((p) => p.text || "").join("\n").trim();
-    if (text) {
-      return text;
-    }
-  }
-
-  throw new Error(lastErrorMessage);
 }
 
 function toFriendlyGeminiError(message) {
   const text = String(message || "");
+
+  if (/429|too many requests|quota|resource exhausted|rate limit/i.test(text)) {
+    return [
+      "Gemini request limit reached for this key/project.",
+      "Wait a bit and retry, or use a key/project with available quota."
+    ].join(" ");
+  }
+
   if (/reported as leaked/i.test(text)) {
     return [
       "This Gemini API key is blocked because Google reported it as leaked.",
@@ -535,16 +472,46 @@ function startThinkingTimer(seconds) {
   }, 1000);
 }
 
-function pickTopic() {
-  return topics[Math.floor(Math.random() * topics.length)];
+async function requestTopicFromApi() {
+  const response = await fetch("/api/generate-topic");
+  const topicContentType = response.headers.get("content-type") || "";
+  if (!topicContentType.includes("application/json")) {
+    throw new Error("API endpoint not reached. Open the app from the Node server URL shown in terminal.");
+  }
+
+  const payload = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error(payload?.details || payload?.error || "Failed to generate topic.");
+  }
+
+  const topic = String(payload?.topic || "").trim();
+  if (!topic) {
+    throw new Error("Topic API returned empty response.");
+  }
+
+  return topic;
 }
 
-function generateIdea() {
+async function generateIdea() {
   if (currentState === STATES.THINKING || currentState === STATES.RECORDING || currentState === STATES.PROCESSING) {
     return;
   }
 
-  activeTopic = pickTopic();
+  setState(STATES.PROCESSING);
+  countdownText.textContent = "--";
+  topicBox.textContent = "Generating topic from API...";
+
+  try {
+    activeTopic = await requestTopicFromApi();
+  } catch (error) {
+    const friendlyError = toFriendlyGeminiError(error.message);
+    setState(STATES.WAITING);
+    topicBox.textContent = `Unable to generate topic from API: ${friendlyError}`;
+    feedbackCard.innerHTML = `<p><strong>Error:</strong> ${friendlyError}</p>`;
+    return;
+  }
+
   topicBox.textContent = activeTopic;
   poseSummary.textContent = "Body data will appear after recording.";
   transcriptBox.textContent = "";
@@ -574,7 +541,7 @@ function resetSession() {
   finalTranscript = "";
   hasSpeech = false;
 
-  topicBox.textContent = "Click Generate Idea to get a random Table Topics prompt.";
+  topicBox.textContent = "Click Generate Idea to get a Table Topics prompt from API.";
   countdownText.textContent = "--";
   transcriptBox.textContent = "Your speech transcript will appear here.";
   poseSummary.textContent = "Body data will appear after recording.";
