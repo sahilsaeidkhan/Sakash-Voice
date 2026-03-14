@@ -8,10 +8,12 @@ dotenv.config();
 const app = express();
 const preferredPort = Number(process.env.PORT) || 3000;
 const geminiApiKey = process.env.GEMINI_API_KEY;
+const openrouterApiKey = process.env.OPENROUTER_API_KEY;
 const geminiModels = (process.env.GEMINI_MODELS || process.env.GEMINI_MODEL || "gemini-2.0-flash")
   .split(",")
   .map((m) => m.trim())
   .filter(Boolean);
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -103,34 +105,161 @@ async function requestGeminiText(prompt, generationConfig = {}) {
   };
 }
 
-app.get("/api/generate-topic", async (req, res) => {
-  if (!geminiApiKey) {
-    return res.status(500).json({ error: "GEMINI_API_KEY is not set on server." });
+async function requestGrokText(prompt) {
+  if (!openrouterApiKey) {
+    throw {
+      message: "Grok API not configured.",
+      details: "OPENROUTER_API_KEY is not set"
+    };
   }
+
+  try {
+    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${openrouterApiKey}`,
+        "HTTP-Referer": "http://localhost:3000"
+      },
+      body: JSON.stringify({
+        model: "arcee-ai/trinity-large-preview:free",
+        messages: [
+          {
+            role: "user",
+            content: prompt
+          }
+        ],
+        temperature: 1.0,
+        max_tokens: 256
+      })
+    });
+
+    const data = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      const errorDetails = data?.error?.message || "Unknown error";
+      console.error(`OpenRouter error (${response.status}):`, errorDetails);
+      throw {
+        message: "Grok API request failed.",
+        details: errorDetails,
+        model: "arcee-ai/trinity-large-preview:free"
+      };
+    }
+
+    //Try to get content from message, or fallback to extracting from reasoning
+    let content = data?.choices?.[0]?.message?.content || "";
+
+    // If content is null/empty but reasoning exists, try to extract answer from reasoning
+    if (!content && data?.choices?.[0]?.message?.reasoning) {
+      const reasoning = data.choices[0].message.reasoning;
+      // Look for quoted text or final answer patterns in reasoning
+      const matches = reasoning.match(/(?:like|something|idea|prompt|answer):\s*["\']?([^"'\n]+)["\']?/i) ||
+                      reasoning.match(/Let's\s+(?:create|craft|build):\s*["\']?([^"'\n.]+)["\']?/i) ||
+                      reasoning.match(/["\']([^"']+)["\']\.?\s*(?:Count words|That's|This is)/i);
+      if (matches && matches[1]) {
+        content = matches[1].trim();
+      }
+    }
+
+    console.log("[OpenRouter Response] Status:", response.status, "Content length:", content.length, "Has reasoning:", !!data?.choices?.[0]?.message?.reasoning);
+    return {
+      text: content,
+      model: "arcee-ai/trinity-large-preview:free"
+    };
+  } catch (error) {
+    if (error?.message === "Grok API request failed.") {
+      throw error;
+    }
+    const errorDetails = error instanceof Error ? error.message : "Unknown error";
+    throw {
+      message: "Grok API request failed.",
+      details: errorDetails,
+      model: "arcee-ai/trinity-large-preview:free"
+    };
+  }
+}
+
+app.get("/api/generate-topic", async (req, res) => {
+  if (!geminiApiKey && !openrouterApiKey) {
+    return res.status(500).json({ error: "No API keys configured (GEMINI_API_KEY or OPENROUTER_API_KEY)" });
+  }
+
+  const categories = [
+    "philosophical or ethical dilemma",
+    "creative or imaginative scenario",
+    "personal growth or reflection",
+    "hypothetical situation or adventure",
+    "opinion or debate topic",
+    "describe an experience or memory",
+    "future prediction or innovation",
+    "life lesson or wisdom",
+    "unexpected challenge or problem-solving",
+    "profession or career-related thought"
+  ];
+
+  const perspectives = [
+    "from the perspective of a time traveler",
+    "as if you were an alien observing Earth",
+    "from the viewpoint of someone 100 years in the future",
+    "from a completely unexpected angle",
+    "as if you were explaining it to a beginner",
+    "in the most creative way possible"
+  ];
+
+  const randomCategory = categories[Math.floor(Math.random() * categories.length)];
+  const randomPerspective = perspectives[Math.floor(Math.random() * perspectives.length)];
+  const randomSeed = Math.random().toString(36).substring(7);
 
   const prompt = [
     "You create Toastmasters Table Topics prompts.",
-    "Generate exactly one concise speaking prompt for a 1-minute impromptu speech.",
+    `Generate exactly one UNIQUE Table Topics prompt about: ${randomCategory}`,
+    `Think ${randomPerspective}`,
+    `Generation ID: ${randomSeed} (Use this to vary your response)`,
+    "Generate a 1-minute impromptu speech prompt.",
     "Rules:",
     "- Return plain text only.",
     "- No numbering, no markdown, no quotes.",
     "- Max 18 words.",
-    "- Friendly and thought-provoking."
+    "- Friendly and thought-provoking.",
+    "- NEVER repeat similar topics.",
+    "- Avoid: daily habits, morning routines, small improvements, meditation, exercise",
+    "- Make it COMPLETELY DIFFERENT from:",
+    "  (personal growth, life lessons, self-help, productivity advice)"
   ].join("\n");
 
   try {
-    const result = await requestGeminiText(prompt, { temperature: 0.9 });
-    const topic = cleanGeneratedTopic(result.text);
-    if (!topic) {
-      return res.status(502).json({ error: "Gemini returned an empty topic." });
+    let result;
+
+    // Try Gemini first with maximum temperature
+    if (geminiApiKey) {
+      try {
+        result = await requestGeminiText(prompt, { temperature: 1.0 });
+      } catch (error) {
+        console.warn("Gemini failed, trying Grok...", error?.message);
+        if (openrouterApiKey) {
+          result = await requestGrokText(prompt);
+        } else {
+          throw error;
+        }
+      }
+    } else {
+      // Use Grok if Gemini not available
+      result = await requestGrokText(prompt);
     }
 
-    return res.json({ topic });
+    const topic = cleanGeneratedTopic(result.text);
+    console.log("Generated topic:", topic, "from model:", result.model);
+    if (!topic) {
+      console.warn("Empty topic returned, result text was:", result.text);
+      return res.status(502).json({ error: "API returned an empty topic." });
+    }
+
+    return res.json({ topic, model: result.model });
   } catch (error) {
-    if (error?.message === "Gemini API request failed.") {
+    if (error?.message === "Gemini API request failed." || error?.message === "Grok API request failed.") {
       return res.status(502).json({
         error: error.message,
-        details: error.details || "Unknown Gemini error",
+        details: error.details || "Unknown error",
         model: error.model || "unknown"
       });
     }
@@ -150,8 +279,8 @@ app.post("/api/gemini-analyze", async (req, res) => {
     return res.status(400).json({ error: "Missing transcript" });
   }
 
-  if (!geminiApiKey) {
-    return res.status(500).json({ error: "GEMINI_API_KEY is not set on server." });
+  if (!geminiApiKey && !openrouterApiKey) {
+    return res.status(500).json({ error: "No API keys configured (GEMINI_API_KEY or OPENROUTER_API_KEY)" });
   }
 
   const prompt = [
@@ -168,18 +297,36 @@ app.post("/api/gemini-analyze", async (req, res) => {
   ].join("\n");
 
   try {
-    const result = await requestGeminiText(prompt, {
-      temperature: 0.4,
-      responseMimeType: "application/json"
-    });
+    let result;
+
+    // Try Gemini first
+    if (geminiApiKey) {
+      try {
+        result = await requestGeminiText(prompt, {
+          temperature: 0.4,
+          responseMimeType: "application/json"
+        });
+      } catch (error) {
+        console.warn("Gemini failed, trying Grok...", error?.message);
+        if (openrouterApiKey) {
+          result = await requestGrokText(prompt);
+        } else {
+          throw error;
+        }
+      }
+    } else {
+      // Use Grok if Gemini not available
+      result = await requestGrokText(prompt);
+    }
+
     const text = result.text;
     const feedback = safeParseFeedback(text);
     return res.json(feedback);
   } catch (error) {
-    if (error?.message === "Gemini API request failed.") {
+    if (error?.message === "Gemini API request failed." || error?.message === "Grok API request failed.") {
       return res.status(502).json({
         error: error.message,
-        details: error.details || "Unknown Gemini error",
+        details: error.details || "Unknown error",
         model: error.model || "unknown"
       });
     }

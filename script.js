@@ -136,9 +136,19 @@ function initSpeechRecognition() {
     }
   };
 
-  recognition.onerror = () => {
+  recognition.onerror = (event) => {
+    // Ignore network errors - they're usually temporary
+    if (event.error === "network") {
+      return;
+    }
+
     if (currentState === STATES.RECORDING) {
-      stopRecordingSession(false);
+      // Try to restart on other errors
+      try {
+        recognition.start();
+      } catch {
+        stopRecordingSession(false);
+      }
     }
   };
 
@@ -149,8 +159,14 @@ function initSpeechRecognition() {
       return;
     }
 
+    // Auto-restart recognition if it ends during recording (due to silence timeout)
     if (currentState === STATES.RECORDING) {
-      stopRecordingSession(false);
+      try {
+        recognition.start();
+      } catch {
+        // If start fails, stop the session
+        stopRecordingSession(false);
+      }
     }
   };
 }

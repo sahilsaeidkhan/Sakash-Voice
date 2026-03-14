@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Sakash Voice</title>
+  <title>Sakash Voice - Speech Practice</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
@@ -13,43 +13,32 @@
   <main class="app-shell">
     <section class="app-card" aria-label="Sakash Voice interface">
       <header class="app-header">
-        <h1>Sakash Voice</h1>
-        <p>Practice Toastmasters-style Table Topics and get AI feedback on speech and body language.</p>
+        <h1>🎤 Sakash Voice</h1>
+        <p>Practice impromptu speaking like Toastmasters Table Topics. Get AI feedback on your speech.</p>
       </header>
-
-      <section class="instructions" aria-label="How it works">
-        <h2>How it works</h2>
-        <ol>
-          <li>Click Generate Idea</li>
-          <li>Think for a few seconds</li>
-          <li>Speak when recording starts</li>
-          <li>Review transcript and feedback</li>
-        </ol>
-      </section>
 
       <section class="topic-section" aria-label="Topic generator">
         <div class="timer-controls">
-          <label for="thinkingTime">Thinking Time</label>
+          <label for="thinkingTime">Prep Time</label>
           <select id="thinkingTime">
             <option value="5">5 seconds</option>
             <option value="10">10 seconds</option>
             <option value="15" selected>15 seconds</option>
+            <option value="20">20 seconds</option>
           </select>
         </div>
 
         <div id="topicBox" class="topic-box" role="status" aria-live="polite">
-          Click Generate Idea to get a Table Topics prompt from API.
+          Click "Start Speaking" to generate your topic.
         </div>
 
         <div class="countdown-row">
-          <p id="statusText" class="status" aria-live="polite">Waiting</p>
+          <p id="statusText" class="status" aria-live="polite">Ready</p>
           <p id="countdown" class="countdown">--</p>
         </div>
       </section>
 
-      <section class="recording-area" aria-label="Recording status">
-        <p class="recording-title">Recording Stage</p>
-
+      <section class="recording-area" aria-label="Recording and pose tracking">
         <div class="recording-grid">
           <div class="mic-stage" aria-live="polite">
             <div id="micButton" class="mic-button">
@@ -68,7 +57,7 @@
 
           <div class="webcam-wrap">
             <video id="webcamVideo" class="webcam-video" autoplay muted playsinline></video>
-            <p id="poseSummary" class="pose-summary">Body data will appear after recording.</p>
+            <p id="poseSummary" class="pose-summary">📍 Body tracking will appear during recording.</p>
           </div>
         </div>
 
@@ -89,22 +78,22 @@
       </section>
 
       <section class="panel-section">
-        <h2>Transcript</h2>
+        <h2>📝 Your Speech</h2>
         <div id="transcriptBox" class="text-panel" role="status" aria-live="polite">
-          Your speech transcript will appear here.
+          Your speech transcript will appear here after recording.
         </div>
       </section>
 
       <section class="panel-section">
-        <h2>AI Feedback</h2>
+        <h2>💡 AI Feedback</h2>
         <div id="feedbackCard" class="feedback-card">
-          <p>Feedback will appear after a completed session.</p>
+          <p>Feedback will appear after you complete a recording.</p>
         </div>
       </section>
 
       <div class="actions">
-        <button id="generateButton" class="primary-button" type="button">Generate Idea</button>
-        <button id="resetButton" class="secondary-button" type="button">Reset Session</button>
+        <button id="generateButton" class="primary-button" type="button">Start Speaking</button>
+        <button id="resetButton" class="secondary-button" type="button">Reset</button>
       </div>
     </section>
   </main>
