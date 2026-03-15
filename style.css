@@ -86,14 +86,78 @@
   --radius-lg: 16px;
   --radius-xl: 24px;
   --radius-full: 999px;
+}
 
-  /* ========== DARK MODE PALETTE (inactive - use with prefers-color-scheme) ========== */
-  --dark-bg: #1a1a1a;
-  --dark-bg-secondary: #2d2d2d;
-  --dark-card-bg: #3a3a3a;
-  --dark-text-main: #f5f5f5;
-  --dark-text-soft: #a0a0a0;
-  --dark-border-soft: #4a4a4a;
+/* ========== DARK MODE THEME ========== */
+@media (prefers-color-scheme: dark) {
+  :root {
+    /* Dark Mode Backgrounds */
+    --bg: #0f172a;
+    --bg-secondary: #1e293b;
+    --card-bg: #1e293b;
+
+    /* Dark Mode Text */
+    --text-main: #f1f5f9;
+    --text-soft: #cbd5e1;
+    --text-lighter: #94a3b8;
+
+    /* Dark Mode Borders */
+    --border-soft: #334155;
+    --border-medium: #475569;
+    --border-strong: #64748b;
+
+    /* Primary (Indigo - adjusted for dark mode) */
+    --primary: #818cf8;
+    --primary-hover: #a5b4fc;
+    --primary-light: #c7d2fe;
+    --primary-soft: rgba(99, 102, 241, 0.1);
+    --primary-glow: rgba(129, 140, 248, 0.2);
+
+    /* Semantic Colors - Dark Mode */
+    --danger: #f87171;
+    --danger-hover: #fca5a5;
+    --danger-soft: rgba(248, 113, 113, 0.1);
+    --danger-glow: rgba(248, 113, 113, 0.2);
+
+    --success: #4ade80;
+    --success-hover: #86efac;
+    --success-soft: rgba(74, 222, 128, 0.1);
+    --success-glow: rgba(74, 222, 128, 0.2);
+
+    --warning: #facc15;
+    --warning-hover: #fde047;
+    --warning-soft: rgba(250, 204, 21, 0.1);
+    --warning-glow: rgba(250, 204, 21, 0.2);
+
+    /* Dark Mode Shadows */
+    --shadow-xs: 0 2px 4px rgba(0, 0, 0, 0.3);
+    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.4);
+    --shadow-md: 0 10px 24px rgba(0, 0, 0, 0.5);
+    --shadow-lg: 0 20px 40px rgba(0, 0, 0, 0.6);
+    --shadow-primary: 0 8px 20px rgba(129, 140, 248, 0.3);
+    --shadow-primary-hover: 0 12px 28px rgba(129, 140, 248, 0.4);
+    --shadow-danger: 0 8px 20px rgba(248, 113, 113, 0.3);
+    --shadow-success: 0 8px 20px rgba(74, 222, 128, 0.3);
+  }
+
+  /* Enhance scrollbar for dark mode */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: var(--bg);
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: var(--border-medium);
+    border-radius: 4px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--border-strong);
+  }
 }
 
 * {
