@@ -1,6 +1,7 @@
 const generateButton = document.getElementById("generateButton");
 const resetButton = document.getElementById("resetButton");
 const thinkingTimeSelect = document.getElementById("thinkingTime");
+const speakingTimeSelect = document.getElementById("speakingTime");
 const topicBox = document.getElementById("topicBox");
 const statusText = document.getElementById("statusText");
 const countdownText = document.getElementById("countdown");
@@ -13,6 +14,7 @@ const webcamVideo = document.getElementById("webcamVideo");
 const poseSummary = document.getElementById("poseSummary");
 const transcriptBox = document.getElementById("transcriptBox");
 const feedbackCard = document.getElementById("feedbackCard");
+const processingModal = document.getElementById("processingModal");
 
 const STATES = {
   WAITING: "Waiting",
@@ -32,6 +34,7 @@ let activeTopic = "";
 let thinkingInterval = null;
 let recordingInterval = null;
 let recordingStopTimeout = null;
+let processingTimeout = null;
 
 let recognition = null;
 let isRecognitionStopping = false;
@@ -66,11 +69,28 @@ function setState(state) {
   const busy = state === STATES.THINKING || state === STATES.RECORDING || state === STATES.PROCESSING;
   generateButton.disabled = busy;
   thinkingTimeSelect.disabled = busy;
+  speakingTimeSelect.disabled = busy;
 
   if (state !== STATES.RECORDING) {
     stopRecordingButton.hidden = true;
     stopRecordingButton.disabled = true;
   }
+}
+
+function showProcessingModal() {
+  processingModal.hidden = false;
+  // Disable interactions
+  generateButton.disabled = true;
+}
+
+function hideProcessingModal() {
+  processingModal.hidden = true;
+}
+
+function formatSeconds(seconds) {
+  const minutes = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  return `${minutes}:${secs < 10 ? '0' : ''}${secs}`;
 }
 
 function setRecordingUI(isRecording) {
@@ -114,6 +134,10 @@ function clearTimers() {
   if (recordingStopTimeout) {
     clearTimeout(recordingStopTimeout);
     recordingStopTimeout = null;
+  }
+  if (processingTimeout) {
+    clearTimeout(processingTimeout);
+    processingTimeout = null;
   }
 }
 
@@ -389,6 +413,9 @@ async function processAndGetFeedback() {
   setState(STATES.PROCESSING);
   recordingStatus.textContent = "Processing...";
 
+  // Show processing modal immediately
+  showProcessingModal();
+
   const transcript = finalTranscript.trim();
 
   const bodyData = summarizePoseData();
@@ -402,22 +429,27 @@ async function processAndGetFeedback() {
     countdownText.textContent = "Done";
     setState(STATES.COMPLETED);
     recordingStatus.textContent = "Not Recording";
+    hideProcessingModal();
     return;
   }
 
   transcriptBox.textContent = transcript;
 
-  try {
-    const feedback = await requestGeminiFeedback(transcript, bodyData);
-    feedbackCard.innerHTML = `<pre class=\"feedback-pre\">${feedback}</pre>`;
-  } catch (error) {
-    const friendlyError = toFriendlyGeminiError(error.message);
-    feedbackCard.innerHTML = `<p><strong>Error:</strong> ${friendlyError}</p>`;
-  }
+  // Delay feedback by 3 seconds
+  processingTimeout = setTimeout(async () => {
+    try {
+      const feedback = await requestGeminiFeedback(transcript, bodyData);
+      feedbackCard.innerHTML = `<pre class="feedback-pre">${feedback}</pre>`;
+    } catch (error) {
+      const friendlyError = toFriendlyGeminiError(error.message);
+      feedbackCard.innerHTML = `<p><strong>Error:</strong> ${friendlyError}</p>`;
+    }
 
-  countdownText.textContent = "Done";
-  setState(STATES.COMPLETED);
-  recordingStatus.textContent = "Not Recording";
+    hideProcessingModal();
+    countdownText.textContent = "Done";
+    setState(STATES.COMPLETED);
+    recordingStatus.textContent = "Not Recording";
+  }, 3000);
 }
 
 function stopRecordingSession(fromButton = true) {
@@ -456,20 +488,25 @@ async function startRecordingSession() {
   resetPoseMetrics();
   transcriptBox.textContent = "";
   feedbackCard.innerHTML = "<p>Analyzing after recording completes...</p>";
-  countdownText.textContent = "60s";
+
+  // Get selected speaking duration in seconds
+  const speakingDurationSeconds = Number(speakingTimeSelect.value) || 120;
+  const speakingDurationMs = speakingDurationSeconds * 1000;
+
+  countdownText.textContent = formatSeconds(speakingDurationSeconds);
 
   setState(STATES.RECORDING);
   setRecordingUI(true);
 
-  let remaining = 60;
+  let remaining = speakingDurationSeconds;
   recordingInterval = setInterval(() => {
     remaining -= 1;
-    countdownText.textContent = remaining > 0 ? `${remaining}s` : "0s";
+    countdownText.textContent = formatSeconds(remaining > 0 ? remaining : 0);
   }, 1000);
 
   recordingStopTimeout = setTimeout(() => {
     stopRecordingSession(true);
-  }, 60000);
+  }, speakingDurationMs);
 
   recognition.start();
 }

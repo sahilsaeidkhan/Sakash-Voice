@@ -299,6 +299,13 @@ body {
   flex-wrap: wrap;
 }
 
+.timer-control-group {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-width: fit-content;
+}
+
 .timer-controls label {
   font-size: 0.95rem;
   font-weight: 600;
@@ -716,6 +723,86 @@ body {
   50% { transform: scale(1.05); opacity: 0.6; }
 }
 
+/* ========== PROCESSING MODAL ========== */
+.processing-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn var(--transition-normal) var(--ease-out);
+}
+
+.processing-modal-backdrop[hidden] {
+  display: none;
+  animation: fadeOut var(--transition-normal) var(--ease-out);
+}
+
+.processing-modal-card {
+  background: var(--card-bg);
+  border-radius: var(--radius-lg);
+  padding: var(--space-6);
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
+  max-width: 400px;
+  width: 90%;
+  animation: slideUp var(--transition-normal) var(--ease-out);
+}
+
+.processing-spinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid var(--border-soft);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin var(--transition-slower) linear infinite;
+}
+
+.processing-title {
+  margin: 0;
+  font-size: var(--font-size-h3);
+  font-weight: 600;
+  color: var(--text-main);
+  text-align: center;
+}
+
+.processing-subtitle {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--text-soft);
+  text-align: center;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes fadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
 /* ========== RESPONSIVE DESIGN BREAKPOINTS ========== */
 
 /* Large Desktop (1920px+) */
@@ -816,6 +903,12 @@ body {
     flex-direction: column;
     align-items: flex-start;
     width: 100%;
+  }
+
+  .timer-control-group {
+    width: 100%;
+    flex-direction: column;
+    align-items: flex-start;
   }
 
   .timer-controls select {
