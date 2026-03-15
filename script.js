@@ -35,9 +35,7 @@ let recordingStopTimeout = null;
 
 let recognition = null;
 let isRecognitionStopping = false;
-let isRecognitionActive = false;
-let recognitionRestartAttempts = 0;
-let recognitionRestartTimeout = null;
+let isRecognitionStarted = false;
 let finalTranscript = "";
 let hasSpeech = false;
 
@@ -117,10 +115,6 @@ function clearTimers() {
     clearTimeout(recordingStopTimeout);
     recordingStopTimeout = null;
   }
-  if (recognitionRestartTimeout) {
-    clearTimeout(recognitionRestartTimeout);
-    recognitionRestartTimeout = null;
-  }
 }
 
 function initSpeechRecognition() {
@@ -134,8 +128,7 @@ function initSpeechRecognition() {
   recognition.interimResults = true;
 
   recognition.onstart = () => {
-    isRecognitionActive = true;
-    recognitionRestartAttempts = 0;
+    isRecognitionStarted = true;
   };
 
   recognition.onresult = (event) => {
@@ -160,49 +153,23 @@ function initSpeechRecognition() {
   };
 
   recognition.onerror = (event) => {
-    // Ignore network errors - they're usually temporary
-    if (event.error === "network") {
-      return;
-    }
-
-    if (currentState === STATES.RECORDING) {
-      // Try to restart on other errors with delay (mobile-friendly)
-      try {
-        recognitionRestartTimeout = setTimeout(() => {
-          if (isRecognitionActive === false && currentState === STATES.RECORDING) {
-            recognition.start();
-          }
-        }, 300);
-      } catch {
-        stopRecordingSession(false);
-      }
-    }
+    // Only stop on critical errors
+    console.debug("Speech recognition error:", event.error);
   };
 
   recognition.onend = () => {
-    isRecognitionActive = false;
-
     if (isRecognitionStopping) {
       isRecognitionStopping = false;
       processAndGetFeedback();
       return;
     }
 
-    // Auto-restart recognition with safety checks (max 3 restarts in 60s)
-    if (currentState === STATES.RECORDING && recognitionRestartAttempts < 3) {
-      recognitionRestartAttempts += 1;
-      // Add exponential backoff: 300ms, 600ms, 1000ms
-      const delay = Math.min(300 * recognitionRestartAttempts, 1000);
-
-      try {
-        recognitionRestartTimeout = setTimeout(() => {
-          if (currentState === STATES.RECORDING && !isRecognitionActive) {
-            recognition.start();
-          }
-        }, delay);
-      } catch {
-        stopRecordingSession(false);
-      }
+    // Do NOT auto-restart during recording
+    // The 60-second timer controls recording duration, not speech recognition
+    // If user is silent, that's okay - we'll process whatever transcript we have
+    if (currentState === STATES.RECORDING) {
+      console.debug("Speech recognition ended during recording (likely due to silence)");
+      // Just silently continue - the 60-second timer will stop the recording
     }
   };
 }
