@@ -557,7 +557,7 @@ function resetSession() {
   finalTranscript = "";
   hasSpeech = false;
 
-  topicBox.textContent = "Click Generate Idea to get a Table Topics prompt from API.";
+  topicBox.textContent = "Click Start Speaking to generate your topic.";
   countdownText.textContent = "--";
   transcriptBox.textContent = "Your speech transcript will appear here.";
   poseSummary.textContent = "Body data will appear after recording.";
