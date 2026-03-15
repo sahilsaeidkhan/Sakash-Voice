@@ -94,6 +94,8 @@ function formatSeconds(seconds) {
 }
 
 function setRecordingUI(isRecording) {
+  console.log("setRecordingUI called. isRecording:", isRecording);
+
   micButton.classList.toggle("recording", isRecording);
   micButton.setAttribute("aria-pressed", isRecording.toString());
   micButton.setAttribute("data-state", isRecording ? "recording" : "idle");
@@ -106,6 +108,7 @@ function setRecordingUI(isRecording) {
   micButton.setAttribute("aria-label", isRecording ? "Microphone button - Currently recording" : "Microphone button - Click to start recording");
 
   if (isRecording) {
+    console.log("Showing stop recording button");
     stopRecordingButton.hidden = false;
     stopRecordingButton.disabled = false;
   }
@@ -453,18 +456,23 @@ async function processAndGetFeedback() {
 }
 
 function stopRecordingSession(fromButton = true) {
+  console.log("stopRecordingSession called. currentState:", currentState, "fromButton:", fromButton);
+
   if (currentState !== STATES.RECORDING) {
+    console.log("Not in RECORDING state, returning");
     return;
   }
 
   clearTimers();
 
   if (recognition && fromButton) {
+    console.log("Setting isRecognitionStopping = true and stopping recognition");
     isRecognitionStopping = true;
     recognition.stop();
     return;
   }
 
+  console.log("Calling processAndGetFeedback directly");
   processAndGetFeedback();
 }
 
@@ -622,4 +630,7 @@ initApp();
 
 generateButton.addEventListener("click", generateIdea);
 resetButton.addEventListener("click", resetSession);
-stopRecordingButton.addEventListener("click", () => stopRecordingSession(true));
+stopRecordingButton.addEventListener("click", () => {
+  console.log("Stop recording button clicked!");
+  stopRecordingSession(true);
+});
