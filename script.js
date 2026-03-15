@@ -35,6 +35,9 @@ let recordingStopTimeout = null;
 
 let recognition = null;
 let isRecognitionStopping = false;
+let isRecognitionActive = false;
+let recognitionRestartAttempts = 0;
+let recognitionRestartTimeout = null;
 let finalTranscript = "";
 let hasSpeech = false;
 
@@ -114,6 +117,10 @@ function clearTimers() {
     clearTimeout(recordingStopTimeout);
     recordingStopTimeout = null;
   }
+  if (recognitionRestartTimeout) {
+    clearTimeout(recognitionRestartTimeout);
+    recognitionRestartTimeout = null;
+  }
 }
 
 function initSpeechRecognition() {
@@ -125,6 +132,11 @@ function initSpeechRecognition() {
   recognition.lang = "en-US";
   recognition.continuous = true;
   recognition.interimResults = true;
+
+  recognition.onstart = () => {
+    isRecognitionActive = true;
+    recognitionRestartAttempts = 0;
+  };
 
   recognition.onresult = (event) => {
     let interim = "";
@@ -154,9 +166,13 @@ function initSpeechRecognition() {
     }
 
     if (currentState === STATES.RECORDING) {
-      // Try to restart on other errors
+      // Try to restart on other errors with delay (mobile-friendly)
       try {
-        recognition.start();
+        recognitionRestartTimeout = setTimeout(() => {
+          if (isRecognitionActive === false && currentState === STATES.RECORDING) {
+            recognition.start();
+          }
+        }, 300);
       } catch {
         stopRecordingSession(false);
       }
@@ -164,18 +180,27 @@ function initSpeechRecognition() {
   };
 
   recognition.onend = () => {
+    isRecognitionActive = false;
+
     if (isRecognitionStopping) {
       isRecognitionStopping = false;
       processAndGetFeedback();
       return;
     }
 
-    // Auto-restart recognition if it ends during recording (due to silence timeout)
-    if (currentState === STATES.RECORDING) {
+    // Auto-restart recognition with safety checks (max 3 restarts in 60s)
+    if (currentState === STATES.RECORDING && recognitionRestartAttempts < 3) {
+      recognitionRestartAttempts += 1;
+      // Add exponential backoff: 300ms, 600ms, 1000ms
+      const delay = Math.min(300 * recognitionRestartAttempts, 1000);
+
       try {
-        recognition.start();
+        recognitionRestartTimeout = setTimeout(() => {
+          if (currentState === STATES.RECORDING && !isRecognitionActive) {
+            recognition.start();
+          }
+        }, delay);
       } catch {
-        // If start fails, stop the session
         stopRecordingSession(false);
       }
     }
