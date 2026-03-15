@@ -57,6 +57,11 @@ function setState(state) {
   currentState = state;
   statusText.textContent = state;
 
+  // Update data-state attributes for styling
+  topicBox.setAttribute("data-state", state.toLowerCase());
+  transcriptBox.setAttribute("data-state", state.toLowerCase());
+  feedbackCard.setAttribute("data-state", state.toLowerCase());
+
   const busy = state === STATES.THINKING || state === STATES.RECORDING || state === STATES.PROCESSING;
   generateButton.disabled = busy;
   thinkingTimeSelect.disabled = busy;
@@ -69,9 +74,15 @@ function setState(state) {
 
 function setRecordingUI(isRecording) {
   micButton.classList.toggle("recording", isRecording);
+  micButton.setAttribute("aria-pressed", isRecording.toString());
+  micButton.setAttribute("data-state", isRecording ? "recording" : "idle");
   waveform.classList.toggle("active", isRecording);
   micLabel.textContent = isRecording ? "Recording" : "Idle";
   recordingStatus.textContent = isRecording ? "Recording..." : "Not Recording";
+  recordingStatus.classList.toggle("active", isRecording);
+
+  // Update mic button aria-label
+  micButton.setAttribute("aria-label", isRecording ? "Microphone button - Currently recording" : "Microphone button - Click to start recording");
 
   if (isRecording) {
     stopRecordingButton.hidden = false;

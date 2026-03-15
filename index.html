@@ -3,6 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="color-scheme" content="light dark" />
+  <meta name="description" content="Sakash Voice - Practice impromptu speaking with AI feedback on your speech and body language." />
   <title>Sakash Voice - Speech Practice</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -11,16 +13,17 @@
 </head>
 <body>
   <main class="app-shell">
-    <section class="app-card" aria-label="Sakash Voice interface">
+    <section class="app-card" aria-label="Sakash Voice speaking practice interface">
       <header class="app-header">
         <h1>🎤 Sakash Voice</h1>
         <p>Practice impromptu speaking like Toastmasters Table Topics. Get AI feedback on your speech.</p>
       </header>
 
-      <section class="topic-section" aria-label="Topic generator">
+      <section class="topic-section" aria-labelledby="topic-heading">
+        <h2 id="topic-heading" class="text-h3 m-0">Topic Generation</h2>
         <div class="timer-controls">
-          <label for="thinkingTime">Prep Time</label>
-          <select id="thinkingTime">
+          <label for="thinkingTime">Prep Time:</label>
+          <select id="thinkingTime" aria-label="Select preparation time in seconds">
             <option value="5">5 seconds</option>
             <option value="10">10 seconds</option>
             <option value="15" selected>15 seconds</option>
@@ -28,40 +31,47 @@
           </select>
         </div>
 
-        <div id="topicBox" class="topic-box" role="status" aria-live="polite">
+        <div id="topicBox" class="topic-box" role="status" aria-live="polite" aria-atomic="true" data-state="idle">
           Click "Start Speaking" to generate your topic.
         </div>
 
         <div class="countdown-row">
-          <p id="statusText" class="status" aria-live="polite">Ready</p>
-          <p id="countdown" class="countdown">--</p>
+          <p id="statusText" class="status" aria-live="polite" aria-atomic="true">Ready</p>
+          <p id="countdown" class="countdown" aria-label="Countdown timer">--</p>
         </div>
       </section>
 
-      <section class="recording-area" aria-label="Recording and pose tracking">
+      <section class="recording-area" aria-labelledby="recording-heading">
+        <h2 id="recording-heading" class="text-h3 m-0">Recording</h2>
         <div class="recording-grid">
-          <div class="mic-stage" aria-live="polite">
-            <div id="micButton" class="mic-button">
-              <svg class="mic-icon" viewBox="0 0 64 64" aria-hidden="true">
+          <div class="mic-stage" role="presentation">
+            <button
+              id="micButton"
+              class="mic-button"
+              aria-label="Microphone button - Click to start recording"
+              aria-pressed="false"
+              type="button"
+              data-state="idle">
+              <svg class="mic-icon" viewBox="0 0 64 64" aria-hidden="true" focusable="false">
                 <rect x="22" y="10" width="20" height="30" rx="10" fill="currentColor"></rect>
                 <path d="M16 30c0 9 7 16 16 16s16-7 16-16" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"></path>
                 <line x1="32" y1="46" x2="32" y2="54" stroke="currentColor" stroke-width="4" stroke-linecap="round"></line>
                 <line x1="24" y1="54" x2="40" y2="54" stroke="currentColor" stroke-width="4" stroke-linecap="round"></line>
               </svg>
-              <span id="micLabel" class="mic-label">Idle</span>
-            </div>
+              <span id="micLabel" class="mic-label" aria-label="Microphone state">Idle</span>
+            </button>
             <span class="ring ring-1" aria-hidden="true"></span>
             <span class="ring ring-2" aria-hidden="true"></span>
             <span class="ring ring-3" aria-hidden="true"></span>
           </div>
 
-          <div class="webcam-wrap">
-            <video id="webcamVideo" class="webcam-video" autoplay muted playsinline></video>
-            <p id="poseSummary" class="pose-summary">📍 Body tracking will appear during recording.</p>
+          <div class="webcam-wrap" role="region" aria-label="Webcam video feed with pose tracking">
+            <video id="webcamVideo" class="webcam-video" autoplay muted playsinline title="Your webcam video feed"></video>
+            <p id="poseSummary" class="pose-summary" aria-live="polite">📍 Body tracking will appear during recording.</p>
           </div>
         </div>
 
-        <div id="waveform" class="waveform" aria-hidden="true">
+        <div id="waveform" class="waveform" aria-hidden="true" role="presentation">
           <span></span>
           <span></span>
           <span></span>
@@ -73,27 +83,27 @@
           <span></span>
         </div>
 
-        <p id="recordingStatus" class="recording-status">Not Recording</p>
-        <button id="stopRecordingButton" class="stop-recording-button" type="button" hidden>Stop Recording</button>
+        <p id="recordingStatus" class="recording-status" aria-live="polite" aria-atomic="true">Not Recording</p>
+        <button id="stopRecordingButton" class="stop-recording-button" type="button" aria-label="Stop the current recording" hidden>Stop Recording</button>
       </section>
 
-      <section class="panel-section">
-        <h2>📝 Your Speech</h2>
-        <div id="transcriptBox" class="text-panel" role="status" aria-live="polite">
+      <section class="panel-section" aria-labelledby="transcript-heading">
+        <h2 id="transcript-heading" class="text-h3 m-0">📝 Your Speech</h2>
+        <div id="transcriptBox" class="text-panel" role="status" aria-live="polite" aria-atomic="true" data-state="idle">
           Your speech transcript will appear here after recording.
         </div>
       </section>
 
-      <section class="panel-section">
-        <h2>💡 AI Feedback</h2>
-        <div id="feedbackCard" class="feedback-card">
+      <section class="panel-section" aria-labelledby="feedback-heading">
+        <h2 id="feedback-heading" class="text-h3 m-0">💡 AI Feedback</h2>
+        <div id="feedbackCard" class="feedback-card" role="status" aria-live="polite" aria-atomic="false" data-state="idle">
           <p>Feedback will appear after you complete a recording.</p>
         </div>
       </section>
 
       <div class="actions">
-        <button id="generateButton" class="primary-button" type="button">Start Speaking</button>
-        <button id="resetButton" class="secondary-button" type="button">Reset</button>
+        <button id="generateButton" class="primary-button" type="button" aria-label="Generate a new topic and start speaking session">Start Speaking</button>
+        <button id="resetButton" class="secondary-button" type="button" aria-label="Reset the application to initial state">Reset</button>
       </div>
     </section>
   </main>
