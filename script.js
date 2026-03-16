@@ -13,7 +13,7 @@ const stopRecordingButton = document.getElementById("stopRecordingButton");
 const webcamVideo = document.getElementById("webcamVideo");
 const poseSummary = document.getElementById("poseSummary");
 const transcriptBox = document.getElementById("transcriptBox");
-const recordingArea = document.getElementById("recordingArea");
+const recordingArea = document.getElementById("recordingSection");
 const callInterface = document.getElementById("callInterface");
 const callMicButton = document.getElementById("callMicButton");
 const hangUpButton = document.getElementById("hangUpButton");
@@ -24,6 +24,11 @@ const transcriptionDisplay = document.getElementById("transcriptionDisplay");
 const callSummarySection = document.getElementById("callSummary");
 const callSummaryText = document.getElementById("callSummaryText");
 const callStatusSection = document.getElementById("callStatus");
+const feedbackCard = document.getElementById("feedbackCard");
+const processingModal = document.getElementById("processingModal");
+const startScreenModal = document.getElementById("startScreenModal");
+const tableTopic_btn = document.getElementById("tableTopic-btn");
+const callFriend_btn = document.getElementById("callFriend-btn");
 
 const STATES = {
   WAITING: "Waiting",
