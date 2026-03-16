@@ -338,6 +338,95 @@ app.post("/api/gemini-analyze", async (req, res) => {
   }
 });
 
+app.post("/api/conversation", async (req, res) => {
+  const userMessage = String(req.body?.user_message || "").trim();
+  const conversationHistory = Array.isArray(req.body?.conversation_history) ? req.body.conversation_history : [];
+
+  if (!userMessage) {
+    return res.status(400).json({ error: "Missing user_message" });
+  }
+
+  if (!geminiApiKey && !openrouterApiKey) {
+    return res.status(500).json({ error: "No API keys configured" });
+  }
+
+  try {
+    // Build conversation prompt for Gemini
+    const systemPrompt = [
+      "You are a friendly AI companion for practicing conversations.",
+      "You're helping someone practice natural English speaking.",
+      "Rules:",
+      "- Be warm, encouraging, and natural.",
+      "- Ask follow-up questions to keep conversation flowing.",
+      "- Keep responses short (1-3 sentences max).",
+      "- Correct gently if needed, but focus on encouragement.",
+      "- Don't use markdown or special formatting.",
+      "- Respond naturally as if in a phone call."
+    ].join("\n");
+
+    // Build the conversation payload for Gemini
+    const messages = [
+      ...conversationHistory.map(msg => ({
+        role: msg.role,
+        parts: [{ text: msg.content }]
+      })),
+      {
+        role: "user",
+        parts: [{ text: userMessage }]
+      }
+    ];
+
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${geminiModels[0]}:generateContent?key=${geminiApiKey}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          system: {
+            instructions: systemPrompt
+          },
+          contents: messages,
+          generationConfig: {
+            temperature: 0.7,
+            maxOutputTokens: 256
+          }
+        })
+      }
+    );
+
+    const data = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      const errorMessage = data?.error?.message || "Unknown Gemini error";
+      console.error("Gemini API error:", errorMessage);
+      return res.status(502).json({
+        error: "Conversation API failed",
+        details: errorMessage
+      });
+    }
+
+    const aiResponse = extractGeminiText(data);
+
+    if (!aiResponse) {
+      return res.status(502).json({
+        error: "Gemini returned empty response"
+      });
+    }
+
+    return res.json({
+      ai_response: aiResponse,
+      turn_number: Math.floor(conversationHistory.length / 2) + 1,
+      session_extended: true
+    });
+  } catch (error) {
+    console.error("Conversation error:", error);
+    return res.status(500).json({
+      error: "Failed to process conversation",
+      details: error instanceof Error ? error.message : "Unknown error"
+    });
+  }
+});
+
 app.use("/api", (req, res) => {
   return res.status(404).json({ error: "API route not found." });
 });

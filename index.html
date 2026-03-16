@@ -52,7 +52,7 @@
         </div>
       </section>
 
-      <section class="recording-area" aria-labelledby="recording-heading">
+      <section class="recording-area" aria-labelledby="recording-heading" id="recordingSection">
         <h2 id="recording-heading" class="text-h3 m-0">Recording</h2>
         <div class="recording-grid">
           <div class="mic-stage" role="presentation">
@@ -98,6 +98,41 @@
         <button id="stopRecordingButton" class="stop-recording-button" type="button" aria-label="Stop the current recording" hidden>Stop Recording</button>
       </section>
 
+      <!-- Call to Friend Interface -->
+      <section class="call-interface" id="callInterface" hidden>
+        <div class="call-header">
+          <h2 class="call-title">Call to Friend</h2>
+          <p id="callDuration" class="call-duration">00:00</p>
+        </div>
+
+        <div class="call-status" id="callStatus">
+          <p id="callStatusText" class="status-text">Connecting...</p>
+        </div>
+
+        <div class="conversation-container" id="conversationContainer">
+          <div id="conversationHistory" class="conversation-history"></div>
+        </div>
+
+        <div class="call-input">
+          <p id="transcriptionDisplay" class="transcription-display"></p>
+        </div>
+
+        <div class="call-controls">
+          <button id="callMicButton" class="call-mic-button" type="button" aria-label="Toggle microphone for call">
+            🎤 Speak
+          </button>
+          <button id="hangUpButton" class="hang-up-button" type="button" aria-label="End the call">
+            📞 Hang Up
+          </button>
+        </div>
+
+        <div id="callSummary" class="call-summary" hidden>
+          <h3>Call Summary</h3>
+          <p id="callSummaryText"></p>
+        </div>
+      </section>
+
+
       <section class="panel-section" aria-labelledby="transcript-heading">
         <h2 id="transcript-heading" class="text-h3 m-0">📝 Your Speech</h2>
         <div id="transcriptBox" class="text-panel" role="status" aria-live="polite" aria-atomic="true" data-state="idle">
@@ -118,6 +153,22 @@
       </div>
     </section>
   </main>
+
+  <!-- Start Screen Modal -->
+  <div id="startScreenModal" class="processing-modal-backdrop" aria-labelledby="startScreenTitle" role="dialog" aria-modal="true">
+    <div class="processing-modal-card">
+      <h2 id="startScreenTitle" class="processing-title">Choose Your Practice Mode</h2>
+      <p class="processing-subtitle">Select how you'd like to practice today</p>
+      <div class="start-screen-buttons">
+        <button id="tableTopic-btn" class="primary-button" type="button" aria-label="Practice Table Topic - impromptu speaking with AI-generated topics">
+          🎤 Practice Table Topic
+        </button>
+        <button id="callFriend-btn" class="primary-button" type="button" aria-label="Call to Friend - free speaking practice">
+          💬 Call to Friend
+        </button>
+      </div>
+    </div>
+  </div>
 
   <!-- Processing Modal -->
   <div id="processingModal" class="processing-modal-backdrop" hidden aria-labelledby="processingTitle" role="alertdialog" aria-modal="true">

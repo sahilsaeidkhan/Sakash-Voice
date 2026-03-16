@@ -778,6 +778,19 @@ body {
   text-align: center;
 }
 
+.start-screen-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  width: 100%;
+  margin-top: var(--space-2);
+}
+
+.start-screen-buttons .primary-button {
+  width: 100%;
+  justify-content: center;
+}
+
 @keyframes fadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
@@ -801,6 +814,211 @@ body {
 
 @keyframes spin {
   to { transform: rotate(360deg); }
+}
+
+/* ========== CALL TO FRIEND INTERFACE ========== */
+
+.call-interface {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-6);
+  background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg) 100%);
+  border-radius: var(--radius-lg);
+  margin-top: var(--space-6);
+}
+
+.call-header {
+  text-align: center;
+  padding-bottom: var(--space-4);
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.call-title {
+  margin: 0;
+  font-size: var(--font-size-h2);
+  font-weight: 700;
+  color: var(--primary);
+}
+
+.call-duration {
+  margin: var(--space-2) 0 0 0;
+  font-size: var(--font-size-body);
+  color: var(--text-soft);
+  font-tabular-nums: tabular-nums;
+  font-family: 'Courier New', monospace;
+}
+
+.call-status {
+  text-align: center;
+  padding: var(--space-4);
+  background: var(--card-bg);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-soft);
+}
+
+.status-text {
+  margin: 0;
+  font-size: var(--font-size-body);
+  color: var(--text-main);
+  font-weight: 500;
+}
+
+.conversation-container {
+  flex: 1;
+  min-height: 300px;
+  max-height: 400px;
+  overflow-y: auto;
+  background: var(--card-bg);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+}
+
+.conversation-history {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.conversation-message {
+  display: flex;
+  margin-bottom: var(--space-2);
+}
+
+.message-user {
+  justify-content: flex-end;
+}
+
+.message-ai {
+  justify-content: flex-start;
+}
+
+.message-bubble {
+  max-width: 80%;
+  padding: var(--space-3);
+  background: var(--bg-secondary);
+  border-radius: var(--radius-md);
+  color: var(--text-main);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-normal);
+  word-wrap: break-word;
+}
+
+.message-user .message-bubble {
+  background: var(--primary);
+  color: white;
+  border-bottom-right-radius: var(--radius-xs);
+}
+
+.message-ai .message-bubble {
+  background: var(--bg-secondary);
+  color: var(--text-main);
+  border-bottom-left-radius: var(--radius-xs);
+}
+
+.call-input {
+  background: var(--card-bg);
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-soft);
+  min-height: 60px;
+}
+
+.transcription-display {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--text-soft);
+  font-style: italic;
+  min-height: 24px;
+}
+
+.transcription-display.active {
+  color: var(--text-main);
+  font-style: normal;
+}
+
+.call-controls {
+  display: flex;
+  gap: var(--space-3);
+  justify-content: center;
+}
+
+.call-mic-button,
+.hang-up-button {
+  padding: var(--space-3) var(--space-5);
+  font-size: var(--font-size-body);
+  font-weight: 600;
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--transition-fast) var(--ease-in-out);
+  min-height: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+}
+
+.call-mic-button {
+  background: var(--primary);
+  color: white;
+  box-shadow: var(--shadow-primary);
+}
+
+.call-mic-button:hover {
+  background: var(--primary-hover);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-primary-hover);
+}
+
+.call-mic-button:active {
+  transform: translateY(0);
+}
+
+.call-mic-button.recording {
+  background: var(--danger);
+  box-shadow: var(--shadow-danger);
+}
+
+.call-mic-button.recording:hover {
+  background: var(--danger-hover);
+}
+
+.hang-up-button {
+  background: var(--danger);
+  color: white;
+  box-shadow: var(--shadow-danger);
+}
+
+.hang-up-button:hover {
+  background: var(--danger-hover);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-primary-hover);
+}
+
+.hang-up-button:active {
+  transform: translateY(0);
+}
+
+.call-summary {
+  background: var(--success-soft);
+  border: 1px solid var(--success);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  text-align: center;
+}
+
+.call-summary h3 {
+  margin: 0 0 var(--space-2) 0;
+  color: var(--success);
+  font-size: var(--font-size-h3);
+}
+
+#callSummaryText {
+  margin: 0;
+  color: var(--text-main);
+  font-size: var(--font-size-sm);
 }
 
 /* ========== RESPONSIVE DESIGN BREAKPOINTS ========== */

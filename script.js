@@ -13,8 +13,17 @@ const stopRecordingButton = document.getElementById("stopRecordingButton");
 const webcamVideo = document.getElementById("webcamVideo");
 const poseSummary = document.getElementById("poseSummary");
 const transcriptBox = document.getElementById("transcriptBox");
-const feedbackCard = document.getElementById("feedbackCard");
-const processingModal = document.getElementById("processingModal");
+const recordingArea = document.getElementById("recordingArea");
+const callInterface = document.getElementById("callInterface");
+const callMicButton = document.getElementById("callMicButton");
+const hangUpButton = document.getElementById("hangUpButton");
+const callDurationDisplay = document.getElementById("callDuration");
+const callStatusText = document.getElementById("callStatusText");
+const conversationHistory = document.getElementById("conversationHistory");
+const transcriptionDisplay = document.getElementById("transcriptionDisplay");
+const callSummarySection = document.getElementById("callSummary");
+const callSummaryText = document.getElementById("callSummaryText");
+const callStatusSection = document.getElementById("callStatus");
 
 const STATES = {
   WAITING: "Waiting",
@@ -24,11 +33,17 @@ const STATES = {
   COMPLETED: "Completed"
 };
 
+const MODES = {
+  TABLE_TOPIC: "table-topic",
+  CALL_TO_FRIEND: "call-to-friend"
+};
+
 const SpeechRecognitionClass = window.SpeechRecognition || window.webkitSpeechRecognition;
 const supportsSpeech = Boolean(SpeechRecognitionClass);
 const supportsPose = typeof window.Pose === "function";
 
 let currentState = STATES.WAITING;
+let currentMode = null;
 let activeTopic = "";
 
 let thinkingInterval = null;
@@ -45,6 +60,15 @@ let hasSpeech = false;
 let camera = null;
 let mediaStream = null;
 let pose = null;
+
+// Call to Friend specific variables
+let callActive = false;
+let callStartTime = null;
+let callDurationInterval = null;
+let callConversationHistory = [];
+let isListening = false;
+let isSpeaking = false;
+let interimTranscript = "";
 
 const poseMetrics = {
   frames: 0,
@@ -85,6 +109,14 @@ function showProcessingModal() {
 
 function hideProcessingModal() {
   processingModal.hidden = true;
+}
+
+function showStartScreen() {
+  startScreenModal.hidden = false;
+}
+
+function hideStartScreen() {
+  startScreenModal.hidden = true;
 }
 
 function formatSeconds(seconds) {
@@ -191,12 +223,16 @@ function initSpeechRecognition() {
       return;
     }
 
-    // Do NOT auto-restart during recording
-    // The 60-second timer controls recording duration, not speech recognition
-    // If user is silent, that's okay - we'll process whatever transcript we have
+    // If recording is still active, restart recognition
+    // (silence/timeout ended it prematurely, especially on mobile)
     if (currentState === STATES.RECORDING) {
-      console.debug("Speech recognition ended during recording (likely due to silence)");
-      // Just silently continue - the 60-second timer will stop the recording
+      console.debug("Speech recognition ended during recording, restarting...");
+      try {
+        recognition.start();
+      } catch (error) {
+        console.debug("Failed to restart recognition:", error);
+        // Will be caught by 60-second timer fallback
+      }
     }
   };
 }
@@ -557,6 +593,264 @@ async function requestTopicFromApi() {
   return topic;
 }
 
+function startPracticeMode(mode) {
+  currentMode = mode;
+
+  if (mode === MODES.CALL_TO_FRIEND) {
+    // For Call to Friend, start a real-time conversation
+    startCall();
+  } else {
+    // For Table Topic, call the existing generateIdea function
+    generateIdea();
+  }
+}
+
+// ========== CALL TO FRIEND FUNCTIONS ==========
+
+function startCall() {
+  callActive = true;
+  callStartTime = Date.now();
+  callConversationHistory = [];
+  interimTranscript = "";
+
+  // Show call interface, hide recording interface
+  recordingArea.hidden = true;
+  callInterface.hidden = false;
+  conversationHistory.innerHTML = "";
+  callSummarySection.hidden = true;
+
+  // Update UI
+  setState(STATES.RECORDING);
+  callStatusText.textContent = "Call started. Speak to begin!";
+  callMicButton.textContent = "🎤 Speak";
+  callMicButton.classList.remove("recording");
+
+  // Start call duration timer
+  updateCallDuration();
+  callDurationInterval = setInterval(updateCallDuration, 1000);
+
+  // Initialize recognition for call
+  if (recognition && supportsSpeech) {
+    finalTranscript = "";
+    hasSpeech = false;
+    isRecognitionStarted = false;
+  }
+}
+
+function updateCallDuration() {
+  if (!callStartTime) return;
+  const elapsed = Math.floor((Date.now() - callStartTime) / 1000);
+  const minutes = Math.floor(elapsed / 60);
+  const seconds = elapsed % 60;
+  callDurationDisplay.textContent = `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+}
+
+function addMessageToConversation(role, message) {
+  const messageDiv = document.createElement("div");
+  messageDiv.className = `conversation-message ${role === 'user' ? 'message-user' : 'message-ai'}`;
+
+  const bubble = document.createElement("div");
+  bubble.className = "message-bubble";
+  bubble.textContent = message;
+
+  messageDiv.appendChild(bubble);
+  conversationHistory.appendChild(messageDiv);
+  conversationHistory.scrollTop = conversationHistory.scrollHeight;
+
+  // Also add to history for API
+  if (role === 'user') {
+    callConversationHistory.push({ role: 'user', content: message });
+  } else {
+    callConversationHistory.push({ role: 'assistant', content: message });
+  }
+}
+
+async function sendCallMessage(userMessage) {
+  if (!userMessage.trim() || isSpeaking) return;
+
+  // Add user message to UI
+  addMessageToConversation('user', userMessage);
+  callStatusText.textContent = "AI is thinking...";
+  transcriptionDisplay.textContent = "";
+
+  try {
+    const response = await fetch("/api/conversation", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        user_message: userMessage,
+        conversation_history: callConversationHistory
+      })
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data?.error || "Conversation failed");
+    }
+
+    const aiResponse = data.ai_response;
+    addMessageToConversation('assistant', aiResponse);
+
+    // Play AI response using SpeechSynthesis
+    speakText(aiResponse, () => {
+      callStatusText.textContent = "Your turn to speak";
+      if (recognition && supportsSpeech) {
+        startListeningForCall();
+      }
+    });
+  } catch (error) {
+    console.error("Conversation error:", error);
+    callStatusText.textContent = "Error: " + error.message;
+  }
+}
+
+function speakText(text, onEnd) {
+  if (!('speechSynthesis' in window)) {
+    console.error("SpeechSynthesis not supported");
+    if (onEnd) onEnd();
+    return;
+  }
+
+  isSpeaking = true;
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.rate = 1.0;
+  utterance.pitch = 1.0;
+  utterance.volume = 1.0;
+
+  utterance.onend = () => {
+    isSpeaking = false;
+    if (onEnd) onEnd();
+  };
+
+  utterance.onerror = (e) => {
+    console.error("Speech synthesis error:", e);
+    isSpeaking = false;
+    if (onEnd) onEnd();
+  };
+
+  window.speechSynthesis.cancel();
+  window.speechSynthesis.speak(utterance);
+}
+
+function startListeningForCall() {
+  if (!recognition || !supportsSpeech || isListening) return;
+
+  isListening = true;
+  finalTranscript = "";
+  interimTranscript = "";
+  callMicButton.textContent = "🔴 Listening...";
+  callMicButton.classList.add("recording");
+
+  try {
+    recognition.start();
+  } catch (e) {
+    console.debug("Recognition already started or error:", e);
+  }
+}
+
+function stopListeningForCall() {
+  if (!recognition || !isListening) return;
+
+  isListening = false;
+  callMicButton.textContent = "🎤 Speak";
+  callMicButton.classList.remove("recording");
+
+  try {
+    recognition.stop();
+  } catch (e) {
+    console.debug("Recognition stop error:", e);
+  }
+}
+
+function endCall() {
+  callActive = false;
+  isListening = false;
+  isSpeaking = false;
+
+  // Clear intervals and recognition
+  if (callDurationInterval) {
+    clearInterval(callDurationInterval);
+    callDurationInterval = null;
+  }
+
+  if (recognition) {
+    try {
+      recognition.stop();
+    } catch (e) {
+      // Ignore
+    }
+  }
+
+  if (window.speechSynthesis) {
+    window.speechSynthesis.cancel();
+  }
+
+  // Show summary
+  const callDuration = Math.floor((Date.now() - callStartTime) / 1000);
+  const turns = Math.floor(callConversationHistory.length / 2);
+  callSummaryText.textContent = `Great practice! You had a ${callDuration}-second conversation with ${turns} turns. Well done!`;
+  callSummarySection.hidden = false;
+  callStatusText.textContent = "Call ended";
+
+  // Hide mic button, show reset option
+  callMicButton.hidden = true;
+  hangUpButton.hidden = true;
+
+  setState(STATES.COMPLETED);
+}
+
+async function initCallRecognition() {
+  if (!supportsSpeech) return;
+
+  // Override the recognition handlers for call mode
+  recognition.onstart = () => {
+    isRecognitionStarted = true;
+  };
+
+  recognition.onresult = (event) => {
+    interimTranscript = "";
+
+    for (let i = event.resultIndex; i < event.results.length; i++) {
+      const transcript = event.results[i][0].transcript;
+
+      if (event.results[i].isFinal) {
+        finalTranscript += transcript + " ";
+        hasSpeech = true;
+      } else {
+        interimTranscript += transcript;
+      }
+    }
+
+    // Update display
+    const displayText = (finalTranscript + interimTranscript).trim();
+    transcriptionDisplay.textContent = displayText;
+    transcriptionDisplay.classList.toggle("active", displayText.length > 0);
+  };
+
+  recognition.onend = () => {
+    if (callActive && isListening && finalTranscript.trim()) {
+      // Send the message
+      stopListeningForCall();
+      const message = finalTranscript.trim();
+      finalTranscript = "";
+      sendCallMessage(message);
+    } else if (callActive && isListening) {
+      // Restart listening if no speech detected
+      console.debug("No speech detected, restarting...");
+      try {
+        recognition.start();
+      } catch (e) {
+        console.debug("Recognition restart error:", e);
+      }
+    }
+  };
+
+  recognition.onerror = (event) => {
+    console.debug("Speech recognition error:", event.error);
+  };
+}
+
 async function generateIdea() {
   if (currentState === STATES.THINKING || currentState === STATES.RECORDING || currentState === STATES.PROCESSING) {
     return;
@@ -598,12 +892,33 @@ function resetSession() {
     }
   }
 
+  // Reset call state
+  callActive = false;
+  isListening = false;
+  isSpeaking = false;
+  if (callDurationInterval) {
+    clearInterval(callDurationInterval);
+    callDurationInterval = null;
+  }
+  if (window.speechSynthesis) {
+    window.speechSynthesis.cancel();
+  }
+
   stopWebcamAndPose();
   resetPoseMetrics();
 
   activeTopic = "";
+  currentMode = null;
   finalTranscript = "";
   hasSpeech = false;
+  callConversationHistory = [];
+
+  // Reset UI
+  recordingArea.hidden = false;
+  callInterface.hidden = true;
+  callMicButton.hidden = false;
+  hangUpButton.hidden = false;
+  callSummarySection.hidden = true;
 
   topicBox.textContent = "Click Start Speaking to generate your topic.";
   countdownText.textContent = "--";
@@ -614,12 +929,18 @@ function resetSession() {
   setRecordingUI(false);
   recordingStatus.textContent = "Not Recording";
   setState(STATES.WAITING);
+
+  // Show start screen
+  showStartScreen();
 }
 
 async function initApp() {
   initSpeechRecognition();
+  initCallRecognition();
   await initPoseTracking();
-  setState(STATES.WAITING);
+
+  // Show start screen on page load instead of going to WAITING state
+  showStartScreen();
 
   if (!supportsSpeech) {
     statusText.textContent = "Speech recognition unsupported in this browser.";
@@ -633,4 +954,30 @@ resetButton.addEventListener("click", resetSession);
 stopRecordingButton.addEventListener("click", () => {
   console.log("Stop recording button clicked!");
   stopRecordingSession(true);
+});
+
+tableTopic_btn.addEventListener("click", () => {
+  hideStartScreen();
+  setState(STATES.WAITING);
+  startPracticeMode(MODES.TABLE_TOPIC);
+});
+
+callFriend_btn.addEventListener("click", () => {
+  hideStartScreen();
+  setState(STATES.WAITING);
+  startPracticeMode(MODES.CALL_TO_FRIEND);
+});
+
+callMicButton.addEventListener("click", () => {
+  if (!callActive) return;
+
+  if (isListening) {
+    stopListeningForCall();
+  } else {
+    startListeningForCall();
+  }
+});
+
+hangUpButton.addEventListener("click", () => {
+  endCall();
 });
