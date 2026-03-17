@@ -182,14 +182,15 @@ export default function TableTopicMode() {
   }, [loadTopic, topic]);
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-sky-50 via-white to-cyan-100 p-4 dark:from-gray-900 dark:via-gray-900 dark:to-gray-800">
-      <section className="mx-auto max-w-4xl rounded-2xl bg-white/80 p-6 shadow-xl backdrop-blur dark:bg-gray-900/70 md:p-8 animate-fade-in">
-        <header className="mb-8 flex flex-wrap items-center justify-between gap-3">
+    <main className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-sky-100 p-4 dark:from-gray-900 dark:via-gray-900 dark:to-gray-800">
+      <section className="glass-panel mx-auto max-w-5xl rounded-3xl p-6 shadow-2xl md:p-8 animate-fade-in">
+        <header className="mb-8 flex flex-wrap items-center justify-between gap-3 border-b border-slate-200/70 pb-6 dark:border-gray-700">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Practice Table Topic</h1>
-            <p className="text-gray-600 dark:text-gray-300">Isolated Toastmasters flow with topic, prep, recording, and feedback.</p>
+            <p className="mb-2 inline-block rounded-full bg-orange-100 px-3 py-1 text-xs font-semibold uppercase tracking-widest text-orange-700">Stage Drill</p>
+            <h1 className="text-3xl font-black tracking-tight text-slate-900 dark:text-white">Practice Table Topic</h1>
+            <p className="text-slate-600 dark:text-slate-300">Isolated Toastmasters flow with topic, prep, recording, and feedback.</p>
           </div>
-          <Link href="/" className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-100 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-800">
+          <Link href="/" className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-800">
             Change Mode
           </Link>
         </header>
@@ -199,7 +200,7 @@ export default function TableTopicMode() {
             type="button"
             onClick={runConnectionCheck}
             disabled={isCheckingConnection}
-            className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-700 disabled:opacity-60"
+            className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-700 disabled:opacity-60"
           >
             {isCheckingConnection ? 'Checking...' : 'Check API Connection'}
           </button>
@@ -225,9 +226,12 @@ export default function TableTopicMode() {
           </div>
         )}
 
-        <div className="mb-6 rounded-xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-900">
-          <p className="mb-2 text-sm uppercase tracking-wide text-gray-500">Topic</p>
-          <p className="text-xl font-semibold text-gray-900 dark:text-white">{isLoadingTopic ? 'Generating topic...' : topic || 'No topic loaded yet'}</p>
+        <div className="mb-6 rounded-2xl border border-sky-200 bg-white/95 p-6 shadow-sm dark:border-sky-900/50 dark:bg-gray-900">
+          <div className="mb-3 flex items-center justify-between">
+            <p className="text-sm font-semibold uppercase tracking-widest text-sky-700 dark:text-sky-300">Topic</p>
+            <span className="rounded-full bg-sky-100 px-3 py-1 text-xs font-semibold text-sky-700 dark:bg-sky-900/40 dark:text-sky-300">{recordingState}</span>
+          </div>
+          <p className="text-xl font-semibold leading-relaxed text-slate-900 dark:text-white">{isLoadingTopic ? 'Generating topic...' : topic || 'No topic loaded yet'}</p>
         </div>
 
         <div className="mb-6 flex flex-wrap gap-3">
@@ -235,7 +239,7 @@ export default function TableTopicMode() {
             type="button"
             onClick={startPrep}
             disabled={!canStartPrep}
-            className="rounded-lg bg-blue-600 px-5 py-3 font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-60"
+            className="rounded-xl bg-gradient-to-r from-sky-600 to-cyan-600 px-5 py-3 font-semibold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
           >
             Start Prep Timer
           </button>
@@ -243,14 +247,14 @@ export default function TableTopicMode() {
             type="button"
             onClick={() => void stopRecordingAndAnalyze()}
             disabled={recordingState !== 'recording'}
-            className="rounded-lg bg-amber-600 px-5 py-3 font-semibold text-white transition hover:bg-amber-500 disabled:cursor-not-allowed disabled:opacity-60"
+            className="rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 px-5 py-3 font-semibold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
           >
             Stop and Analyze
           </button>
           <button
             type="button"
             onClick={() => void loadTopic()}
-            className="rounded-lg border border-gray-300 px-5 py-3 font-semibold text-gray-700 transition hover:bg-gray-100 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-800"
+            className="rounded-xl border border-slate-300 px-5 py-3 font-semibold text-slate-700 transition hover:bg-slate-100 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-800"
           >
             Generate New Topic
           </button>
@@ -262,9 +266,9 @@ export default function TableTopicMode() {
           <StatusCard title="Speaking Time" value={speakingTimer.formatted} />
         </div>
 
-        <div className="mb-6 rounded-xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-900">
-          <p className="mb-2 text-sm uppercase tracking-wide text-gray-500">Transcript</p>
-          <p className="whitespace-pre-wrap text-gray-800 dark:text-gray-100">{transcript || 'Your speech transcript appears here during recording.'}</p>
+        <div className="mb-6 rounded-2xl border border-slate-200 bg-white/95 p-5 shadow-sm dark:border-gray-700 dark:bg-gray-900">
+          <p className="mb-2 text-sm font-semibold uppercase tracking-widest text-slate-500">Transcript</p>
+          <p className="min-h-16 whitespace-pre-wrap text-slate-800 dark:text-gray-100">{transcript || 'Your speech transcript appears here during recording.'}</p>
         </div>
 
         {feedback && (
@@ -301,9 +305,9 @@ async function blobToBase64(blob: Blob): Promise<string> {
 
 function StatusCard({ title, value }: { title: string; value: string }) {
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-900">
-      <p className="text-xs uppercase tracking-wide text-gray-500">{title}</p>
-      <p className="mt-2 text-lg font-semibold text-gray-900 dark:text-white">{value}</p>
+    <div className="rounded-2xl border border-slate-200 bg-white/95 p-4 shadow-sm dark:border-gray-700 dark:bg-gray-900">
+      <p className="text-xs font-semibold uppercase tracking-widest text-slate-500">{title}</p>
+      <p className="mt-2 text-xl font-black text-slate-900 dark:text-white">{value}</p>
     </div>
   );
 }

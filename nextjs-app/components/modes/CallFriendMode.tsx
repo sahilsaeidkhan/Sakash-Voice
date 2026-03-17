@@ -69,14 +69,15 @@ export default function CallFriendMode() {
   }, [audioStream, peerConnection]);
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-100 p-4 dark:from-gray-900 dark:via-gray-900 dark:to-gray-800">
-      <section className="mx-auto max-w-3xl rounded-2xl bg-white/80 p-6 shadow-xl backdrop-blur dark:bg-gray-900/70 md:p-8 animate-fade-in">
-        <header className="mb-8 flex flex-wrap items-center justify-between gap-3">
+    <main className="min-h-screen bg-gradient-to-br from-emerald-50 via-lime-50 to-cyan-100 p-4 dark:from-gray-900 dark:via-gray-900 dark:to-gray-800">
+      <section className="glass-panel mx-auto max-w-4xl rounded-3xl p-6 shadow-2xl md:p-8 animate-fade-in">
+        <header className="mb-8 flex flex-wrap items-center justify-between gap-3 border-b border-slate-200/70 pb-6 dark:border-gray-700">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Call to Friend</h1>
-            <p className="text-gray-600 dark:text-gray-300">Independent call mode with isolated call session state.</p>
+            <p className="mb-2 inline-block rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold uppercase tracking-widest text-emerald-700">Live Conversation</p>
+            <h1 className="text-3xl font-black tracking-tight text-slate-900 dark:text-white">Call to Friend</h1>
+            <p className="text-slate-600 dark:text-slate-300">Independent call mode with isolated call session state.</p>
           </div>
-          <Link href="/" className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-100 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-800">
+          <Link href="/" className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-800">
             Change Mode
           </Link>
         </header>
@@ -99,7 +100,7 @@ export default function CallFriendMode() {
             type="button"
             onClick={() => void startCall()}
             disabled={callStatus === 'connecting' || callStatus === 'active'}
-            className="rounded-lg bg-emerald-600 px-5 py-3 font-semibold text-white transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-60"
+            className="rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 px-5 py-3 font-semibold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
           >
             Start Call
           </button>
@@ -108,7 +109,7 @@ export default function CallFriendMode() {
             type="button"
             onClick={endCall}
             disabled={callStatus !== 'active'}
-            className="rounded-lg bg-slate-700 px-5 py-3 font-semibold text-white transition hover:bg-slate-600 disabled:cursor-not-allowed disabled:opacity-60"
+            className="rounded-xl bg-gradient-to-r from-slate-700 to-gray-700 px-5 py-3 font-semibold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
           >
             End Call
           </button>
@@ -117,7 +118,7 @@ export default function CallFriendMode() {
             type="button"
             onClick={() => void recorder.startRecording()}
             disabled={callStatus !== 'active' || recorder.isRecording}
-            className="rounded-lg border border-emerald-600 px-5 py-3 font-semibold text-emerald-700 transition hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-60 dark:text-emerald-300 dark:hover:bg-emerald-950/30"
+            className="rounded-xl border border-emerald-600 px-5 py-3 font-semibold text-emerald-700 transition hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-60 dark:text-emerald-300 dark:hover:bg-emerald-950/30"
           >
             {recorder.isRecording ? 'Recording...' : 'Record Audio'}
           </button>
@@ -135,9 +136,9 @@ export default function CallFriendMode() {
 
 function StateCard({ title, value }: { title: string; value: string }) {
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-900">
-      <p className="text-xs uppercase tracking-wide text-gray-500">{title}</p>
-      <p className="mt-2 text-lg font-semibold text-gray-900 dark:text-white">{value}</p>
+    <div className="rounded-2xl border border-slate-200 bg-white/95 p-4 shadow-sm dark:border-gray-700 dark:bg-gray-900">
+      <p className="text-xs font-semibold uppercase tracking-widest text-slate-500">{title}</p>
+      <p className="mt-2 text-xl font-black text-slate-900 dark:text-white">{value}</p>
     </div>
   );
 }
