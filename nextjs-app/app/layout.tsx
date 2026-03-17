@@ -1,13 +1,18 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import AppProviders from './AppProviders';
 
 export const metadata: Metadata = {
   title: 'Sakash Voice - Speech Practice App',
   description: 'Practice impromptu speaking with real-time AI feedback for Toastmasters Table Topics',
-  viewport: 'width=device-width, initial-scale=1.0, maximum-scale=5.0',
   robots: 'index, follow',
   authors: [{ name: 'Sakash Team' }],
   keywords: ['speech', 'practice', 'toastmasters', 'impromptu', 'ai', 'feedback', 'speaking'],
+};
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 5,
 };
 
 export default function RootLayout({

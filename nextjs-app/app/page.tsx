@@ -1,12 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { usePracticeContext } from '@/lib/hooks/usePracticeContext';
-import ModeSelectorModal from '@/components/ModeSelectorModal';
-import PracticeTableTopic from '@/components/PracticeTableTopic';
-import CallToFriend from '@/components/CallToFriend';
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import ModeSelector from '@/components/ModeSelector';
 
-type PracticeMode = 'table-topic' | 'call-to-friend' | null;
+type PracticeModeRoute = '/practice/table-topic' | '/practice/call-friend';
 
 /**
  * Home Page
@@ -15,67 +13,41 @@ type PracticeMode = 'table-topic' | 'call-to-friend' | null;
  * Routes to appropriate practice mode component
  */
 export default function Home() {
-  const context = usePracticeContext();
-  const { currentMode, setCurrentMode } = context;
+  const router = useRouter();
   const [isModalOpen, setIsModalOpen] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
-  const [mounted, setMounted] = useState(false);
 
-  // Ensure component is mounted before rendering (hydration fix)
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  const handleModeSelect = (mode: PracticeMode) => {
+  const handleModeSelect = (route: PracticeModeRoute) => {
     setIsLoading(true);
-    setCurrentMode(mode);
     setIsModalOpen(false);
-    setIsLoading(false);
+    router.push(route);
   };
-
-  if (!mounted) {
-    return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
-  }
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
-      {/* Mode Selector Modal */}
       {isModalOpen && (
-        <ModeSelectorModal
+        <ModeSelector
           isOpen={isModalOpen}
-          onModeSelect={handleModeSelect}
+          onSelect={handleModeSelect}
           isLoading={isLoading}
         />
       )}
 
-      {/* Practice Mode Views */}
-      {currentMode === 'table-topic' && !isModalOpen && (
-        <PracticeTableTopic />
-      )}
-
-      {currentMode === 'call-to-friend' && !isModalOpen && (
-        <CallToFriend />
-      )}
-
-      {/* Welcome State */}
-      {!currentMode && !isModalOpen && (
-        <div className="flex items-center justify-center min-h-screen">
-          <div className="text-center">
-            <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">
-              🎤 Sakash Voice
-            </h1>
-            <p className="text-xl text-gray-600 dark:text-gray-300 mb-8">
-              Practice impromptu speaking with AI feedback
-            </p>
-            <button
-              onClick={() => setIsModalOpen(true)}
-              className="px-8 py-3 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition-colors"
-            >
-              Get Started
-            </button>
-          </div>
+      <div className="flex min-h-screen items-center justify-center p-6">
+        <div className="max-w-xl rounded-2xl bg-white/80 p-8 text-center shadow-xl backdrop-blur dark:bg-gray-900/60">
+          <h1 className="mb-3 text-4xl font-bold text-gray-900 dark:text-white">Sakash Voice</h1>
+          <p className="text-lg text-gray-600 dark:text-gray-300">
+            Select a mode to begin a focused speaking practice session.
+          </p>
+          <button
+            type="button"
+            onClick={() => setIsModalOpen(true)}
+            className="mt-6 rounded-lg bg-indigo-600 px-6 py-3 font-semibold text-white transition hover:bg-indigo-500"
+          >
+            Choose Practice Mode
+          </button>
         </div>
-      )}
+      </div>
     </main>
   );
 }
