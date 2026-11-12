@@ -91,3 +91,9 @@ Set these in `.env` before running `npm start`.
 - Web Speech API
 - MediaPipe Pose
 - Gemini Generative Language API
+
+## Documentation
+
+- `IMPLEMENTATION_COMPLETE.md` — what is built and how it fits together
+- `nextjs-app/` — the Next.js version of the app, with its own setup notes inside
+- `DEPLOYMENT_SUMMARY.md` — deployment notes
