@@ -6,7 +6,7 @@ Your React app is now configured to use your **existing OpenRouter API key**. No
 
 Your `.env.local` already has:
 ```
-OPENROUTER_API_KEY=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
+OPENROUTER_API_KEY=your_openrouter_api_key_here
 ```
 
 ---
